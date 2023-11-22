@@ -314,6 +314,16 @@ def comprobar_numero_canciones_min(playlist, numero_canciones_min): # si el nume
 
 #region CREAR PLAYLIST
 
+def extrarCanciones(playlist):
+    trackList = []
+    for item in playlist['items']:
+        trackList.append(item['track']['id'])
+    return trackList
+
+def añadirCanciones(listaTracks, nuevaPlaylistID, sp):
+    sp.playlist_add_items(nuevaPlaylistID, listaTracks)
+    return nuevaPlaylistID
+
 def createPlaylist(dicParameters, sp, playlistOriginal):
     playlist_name = dicParameters['universalParameters'][0]
     playlist_description = dicParameters['universalParameters'][1]
