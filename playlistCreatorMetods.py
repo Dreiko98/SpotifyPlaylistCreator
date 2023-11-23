@@ -259,36 +259,4 @@ def createPlaylist(dicParameters, sp, playlistOriginal):
         sp.playlist_upload_cover_image(new_playlist['id'], dicParameters['cover'])
     new_url = new_playlist['external_urls']['spotify'] # devuelve la url de la playlist creada
     print(f'La playlist {playlist_name} ha sido creada con éxito. Puedes acceder a ella en {new_url}')
-
-
-
-
-
-
-
-
-'''def createPlaylist(dicParameters, sp, playlistOriginal):
-    playlist_name = dicParameters['universalParameters'][0]
-    playlist_description = dicParameters['universalParameters'][1]
-    public = dicParameters['universalParameters'][2]
-    new_playlist = sp.user_playlist_create(user=sp.me()['id'], name=playlist_name, public=public, description=playlist_description)
-    newTracks = []
-    for item in playlistOriginal['items']:
-        seAñade = True
-        if dicParameters['artists'] is not None:
-            seAñade = check_artist(item, dicParameters['artists'])
-        if dicParameters['genres'] is not None and seAñade:
-            seAñade = check_genre(item, dicParameters['genres'], sp)
-        if dicParameters['years'] != (None, None) and seAñade:
-            seAñade = check_year(item, dicParameters['years'][0], dicParameters['años'][1])
-        if dicParameters['albums'] is not None and seAñade:
-            seAñade = check_album(item, dicParameters['albums'])
-        if dicParameters['popularity'] is not None and seAñade:
-            seAñade = check_popularity(item, dicParameters['popularity'])
-        if seAñade:
-            newTracks.append(item['track']['uri'])
-    sp.playlist_add_items(new_playlist['id'], newTracks)
-    if dicParameters['cover'] != None and check_url_cover(dicParameters['cover']):
-        sp.playlist_upload_cover_image(new_playlist['id'], dicParameters['cover'])
-    return new_playlist'''
 #endregion
