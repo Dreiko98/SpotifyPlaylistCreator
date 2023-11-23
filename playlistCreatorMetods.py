@@ -74,11 +74,12 @@ def artistParameter(playlistOriginal, playlist_info, sp): #devuelve una lista co
     return chosenArtists #lista con los ids de los artistas seleccionados
 
 def check_artist(item, chosenArtists): # comprueba si almenos algún artista de la canción está en la lista de artistas elegidos
-    bool = False
-    for artist in item['track']['artists']:
-        if artist['id'] in chosenArtists:
-            bool = True
-    return bool
+    if chosenArtists is not None:
+        for artist in item['track']['artists']:
+            if artist['id'] in chosenArtists:
+                return True
+        return False
+    return True
 
 #endregion
 
@@ -122,8 +123,11 @@ def albumParameter(playlistOriginal, playlist_info, sp):
     return chosenAlbums #lista con los ids de los albumes seleccionados
 
 def check_album(item, chosenAlbums): # comprueba si el album de la canción está en la lista de albumes elegidos
-    if item['track']['album']['id'] in chosenAlbums:
-        return True
+    if chosenAlbums is not None:
+        if item['track']['album']['id'] in chosenAlbums:
+            return True
+        return False
+    return True
 
 #endregion
 
@@ -169,13 +173,15 @@ def genreParameter(playlistOriginal, playlist_info, sp):
     return chosenGenres
 
 def check_genre(item, chosenGenres, sp): # comprueba si alguno de los generos del artista de la cancion está en la lista de generos elegidos
-    track_artist = item['track']['artists'][0]['id']
-    info_artista = sp.artist(track_artist)
-    artist_genres = info_artista['genres']
-    for genre in artist_genres:
-        if genre in chosenGenres: # si el género está en la lista de géneros de la playlist
-            return True
-    return False
+    if chosenGenres is not None:
+        track_artist = item['track']['artists'][0]['id'] # artista principal de la cancion
+        info_artista = sp.artist(track_artist)
+        artist_genres = info_artista['genres'] # generos del artista principal de la cancion 
+        for genre in artist_genres:
+            if genre in chosenGenres: # si el género está en la lista de géneros de la playlist
+                return True
+        return False
+    return True
 
 #endregion
 
@@ -192,9 +198,11 @@ def yearParameter():
     return (initial_year, end_year)
 
 def check_year(item, initial_year, end_year): # comprueba que el año del track esté entre los años inicial y final
-    if initial_year <= int(item['track']['album']['release_date'].split('-')[0]) <= end_year: # si el año de lanzamiento del album está entre los años inicial y final
-        return True
-    return False
+    if initial_year is not None and end_year is not None:
+        if initial_year <= int(item['track']['album']['release_date'].split('-')[0]) <= end_year: # si el año de lanzamiento del album está entre los años inicial y final
+            return True
+        return False
+    return True
 
 #endregion
 
@@ -213,9 +221,11 @@ def popularityParameter():
     return popularity
 
 def check_popularity(item, popularity): # si la popularidad es None, no se comprueba
-    if item['track']['popularity'] >= popularity:
-        return True
-    return False
+    if popularity is not None:
+        if item['track']['popularity'] >= popularity:
+            return True
+        return False
+    return True
 
 #endregion
 
@@ -229,7 +239,7 @@ def universalParameters(): #name, description, public
         playlist_public = True
     else:
         playlist_public = False
-    return (playlist_name, playlist_description, playlist_public)
+    return (playlist_name, playlist_public, playlist_description)
 
 #endregion
 
@@ -314,38 +324,68 @@ def comprobar_numero_canciones_min(playlist, numero_canciones_min): # si el nume
 
 #region CREAR PLAYLIST
 
-def extrarCanciones(playlist):
+def extraerCanciones(playlist): #devuelve en una lista los ids de las canciones de una playlist que recibe como parámetro
     trackList = []
     for item in playlist['items']:
         trackList.append(item['track']['id'])
     return trackList
 
-def añadirCanciones(listaTracks, nuevaPlaylistID, sp):
+def añadirCanciones(listaTracks, nuevaPlaylistID, sp): #añade a una playlist una lista de canciones devuelve la id de esa playlist
     sp.playlist_add_items(nuevaPlaylistID, listaTracks)
     return nuevaPlaylistID
 
+def cumpleParametros(song, dicParameters, sp):
+    if check_artist(item, dicParameters['artists']) == False:
+        return False
+    if check_album(item, dicParameters['albums']) == False:
+        return False
+    if check_genre(item, dicParameters['genres'], sp) == False:
+        return False
+    if check_year(item, dicParameters['years'][0], dicParameters['years'][1]) == False:
+        return False
+    if check_popularity(item, dicParameters['popularity']) == False:
+        return False
+
+    
+
 def createPlaylist(dicParameters, sp, playlistOriginal):
+    playlist_name, playlist_public, playlist_description = universalParameters()
+    new_playlist = sp.user_playlist_create(user=sp.me()['id'], name=playlist_name, public = playlist_public, description=playlist_description)
+    new_tracklist = []
+    for song in extraerCanciones(playlistOriginal): #por cada id de cancion
+        cumpleParams = cumpleParametros(song, dicParameters, sp)
+        if cumpleParams:
+            new_tracklist.append(song)
+
+
+
+
+
+
+
+
+'''def createPlaylist(dicParameters, sp, playlistOriginal):
     playlist_name = dicParameters['universalParameters'][0]
     playlist_description = dicParameters['universalParameters'][1]
     public = dicParameters['universalParameters'][2]
     new_playlist = sp.user_playlist_create(user=sp.me()['id'], name=playlist_name, public=public, description=playlist_description)
     newTracks = []
     for item in playlistOriginal['items']:
-        bool = True
+        seAñade = True
         if dicParameters['artists'] is not None:
-            bool = check_artist(item, dicParameters['artists'])
-        if dicParameters['genres'] is not None and bool:
-            bool = check_genre(item, dicParameters['genres'], sp)
-        if dicParameters['years'] != (None, None) and bool:
-            bool = check_year(item, dicParameters['years'][0], dicParameters['años'][1])
-        if dicParameters['albums'] is not None and bool:
-            bool = check_album(item, dicParameters['albums'])
-        if dicParameters['popularity'] is not None and bool:
-            bool = check_popularity(item, dicParameters['popularity'])
-        if bool:
+            seAñade = check_artist(item, dicParameters['artists'])
+        if dicParameters['genres'] is not None and seAñade:
+            seAñade = check_genre(item, dicParameters['genres'], sp)
+        if dicParameters['years'] != (None, None) and seAñade:
+            seAñade = check_year(item, dicParameters['years'][0], dicParameters['años'][1])
+        if dicParameters['albums'] is not None and seAñade:
+            seAñade = check_album(item, dicParameters['albums'])
+        if dicParameters['popularity'] is not None and seAñade:
+            seAñade = check_popularity(item, dicParameters['popularity'])
+        if seAñade:
             newTracks.append(item['track']['uri'])
     sp.playlist_add_items(new_playlist['id'], newTracks)
     if dicParameters['cover'] != None and check_url_cover(dicParameters['cover']):
         sp.playlist_upload_cover_image(new_playlist['id'], dicParameters['cover'])
-    return new_playlist
+    return new_playlist'''
 #endregion

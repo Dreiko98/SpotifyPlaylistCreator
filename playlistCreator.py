@@ -53,11 +53,6 @@ else:
     albums = None
     print('No se eligieron albumes')
 
-# GENEROS
-genres = genreParameter(playlistOriginal, playlist_info, sp)
-parameters['genres'] = genres
-print(f'Generos elegidos: {genres}')
-
 # AÑO
 years = yearParameter()
 parameters['years'] = years
