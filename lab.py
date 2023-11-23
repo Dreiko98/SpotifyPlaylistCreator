@@ -22,14 +22,23 @@ playlist_info = sp.playlist(id_playlist)
 print(f'La playlist original es: {playlist_info["name"]}')
 
 listaCanciones = extraerCanciones(playlistOriginal)
-print(listaCanciones)
 
-print("\n\n mi puta polla huele a queso\n\n")
+song1 = listaCanciones[3]
+print(f'\nsong1: {song1}\n')
+song_info = sp.track(song1).keys()
+print(f'song_info: {song_info} \n')
+songAlbum = sp.track(song1)['album']
+print(f'type(songAlbum){type(songAlbum)}\n') #lista
 
-new_playlist = sp.user_playlist_create(user=sp.me()['id'], name="esto es una prueba", public=False, description="esto es una descripción")
-print(new_playlist)
+for artist in songAlbum:
+    print(artist['name'])
+    print(artist['id'])
 
-print("\n\n mi puta polla huele a queso joder que alguien me pare\n\n")
-
-añadirCanciones(listaCanciones, new_playlist, sp)
-print(new_playlist['items']['track']['name'])
+"""for song in listaCanciones:
+    nameSong = sp.track(song)['name']
+    #obtener artista de la cancion teniendo la id de la cancion
+    artist = sp.track(song).keys()
+    print(nameSong)
+    for artist in artist:
+        artist = artist['name']
+    print(artist)"""

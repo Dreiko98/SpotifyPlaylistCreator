@@ -33,6 +33,8 @@ def get_id_album(url_album):
         return None
 #endregion
 
+# parametros de las canciones
+
 #region ARTISTA
 
 def artistListMaker(playlist): #crea una lista con todos los artistas de la playlist
@@ -73,9 +75,10 @@ def artistParameter(playlistOriginal, playlist_info, sp): #devuelve una lista co
         chosenArtists = None
     return chosenArtists #lista con los ids de los artistas seleccionados
 
-def check_artist(item, chosenArtists): # comprueba si almenos algún artista de la canción está en la lista de artistas elegidos
+def check_artist(song, chosenArtists, sp): # comprueba si almenos algún artista de la canción está en la lista de artistas elegidos
     if chosenArtists is not None:
-        for artist in item['track']['artists']:
+        info_track = sp.track(song)
+        for artist in info_track['artists']:
             if artist['id'] in chosenArtists:
                 return True
         return False
@@ -122,64 +125,11 @@ def albumParameter(playlistOriginal, playlist_info, sp):
         chosenAlbums = None
     return chosenAlbums #lista con los ids de los albumes seleccionados
 
-def check_album(item, chosenAlbums): # comprueba si el album de la canción está en la lista de albumes elegidos
+def check_album(song, chosenAlbums, sp): # comprueba si el album de la canción está en la lista de albumes elegidos
     if chosenAlbums is not None:
-        if item['track']['album']['id'] in chosenAlbums:
+        info_track = sp.track(song)
+        if info_track['album']['id'] in chosenAlbums:
             return True
-        return False
-    return True
-
-#endregion
-
-#region GENERO
-
-def genreListMaker(playlist, sp):
-    genresList = []
-    for item in playlist['items']:
-        track_artist = item['track']['artists'][0]['id']
-        info_artista = sp.artist(track_artist)
-        for genre in info_artista['genres']:
-            if genre not in genresList:
-                genresList.append(genre)
-    return genresList
-
-def printGenres(genresList):
-    cont = 1
-    for genre in genresList:
-        print(f'{cont}) {genre}')
-        cont += 1
-
-def genreParameter(playlistOriginal, playlist_info, sp):
-    genreList = genreListMaker(playlistOriginal, sp) # lista con todos los generos de la playlist
-    wantsGenre = str(input('¿Quieres que la playlist sea de un género o varios géneros en concreto? (y/n): '))
-    if wantsGenre.lower() == 'y':
-        print(f'Estos son los géneros de la playlist {playlist_info["name"]}:')
-        printGenres(genreListMaker) # imprime todos los generos de la playlist con el formato: 1) nombre genero
-        chosenGenresNum = str(input('Escribe los números de los géneros que quieres en tu playlist separados por comas: '))
-        if chosenGenresNum:
-            chosenGenresNumList = chosenGenresNum.split(',')
-            chosenGenres = []
-            for num in chosenGenresNumList:
-                num = int(num.strip())  # Convertir a entero y eliminar espacios en blanco
-                if 1 <= num <= len(genreListMaker): # comprueba si el numero que le has metido está dentro del rango de generos
-                    chosenGenres.append(genreListMaker[num - 1])
-                else:
-                    print(f'Error: La posición {num} está fuera de rango. Ignorando esta posición.')
-        else:
-            print('Error: No se proporcionaron números de géneros. La lista de géneros será nula.')
-            chosenGenres = None
-    else:
-        chosenGenres = None
-    return chosenGenres
-
-def check_genre(item, chosenGenres, sp): # comprueba si alguno de los generos del artista de la cancion está en la lista de generos elegidos
-    if chosenGenres is not None:
-        track_artist = item['track']['artists'][0]['id'] # artista principal de la cancion
-        info_artista = sp.artist(track_artist)
-        artist_genres = info_artista['genres'] # generos del artista principal de la cancion 
-        for genre in artist_genres:
-            if genre in chosenGenres: # si el género está en la lista de géneros de la playlist
-                return True
         return False
     return True
 
@@ -197,9 +147,11 @@ def yearParameter():
         end_year = None
     return (initial_year, end_year)
 
-def check_year(item, initial_year, end_year): # comprueba que el año del track esté entre los años inicial y final
+def check_year(song, initial_year, end_year, sp): # comprueba que el año del track esté entre los años inicial y final
     if initial_year is not None and end_year is not None:
-        if initial_year <= int(item['track']['album']['release_date'].split('-')[0]) <= end_year: # si el año de lanzamiento del album está entre los años inicial y final
+        info_track = sp.track(song)
+        songAlbum = info_track['album']
+        if initial_year <= int(songAlbum['release_date'].split('-')[0]) <= end_year: # si el año de lanzamiento del album está entre los años inicial y final
             return True
         return False
     return True
@@ -220,14 +172,17 @@ def popularityParameter():
         popularity = None
     return popularity
 
-def check_popularity(item, popularity): # si la popularidad es None, no se comprueba
+def check_popularity(song, popularity, sp): # si la popularidad es None, no se comprueba
     if popularity is not None:
-        if item['track']['popularity'] >= popularity:
+        info_track = sp.track(song)
+        if info_track['popularity'] >= popularity:
             return True
         return False
     return True
 
 #endregion
+
+# parametros de la playlist nueva
 
 #region UNIVERSALES (nombre, descripcion, publica)
 
@@ -266,61 +221,7 @@ def check_url_cover(cover):
 
 #endregion
 
-#region PARAMETROS QUE ME VOY A FOLLAR
-
-def parametroDuracionCancionesMax():
-    quiereDuracionCanciones = str(input('Quieres que la playlist tenga canciones de una duración máxima en concreto? (y/n): '))
-    if quiereDuracionCanciones == 'y':
-        duracion_canciones = int(input('Duración en minutos: '))
-    else:
-        duracion_canciones = None
-    return duracion_canciones
-
-def comprobar_duracion_max(track, duracion_canciones_max): # si la duracion maxima es None, no se comprueba
-    if track['track']['duration_ms']/60000 <= duracion_canciones_max:
-        return True
-    return False
-
-def parametroDuracionCancionesMin():
-    quiereDuracionCancionesMin = str(input('Quieres que la playlist tenga canciones de una duración mínima en concreto? (y/n): '))
-    if quiereDuracionCancionesMin == 'y':
-        duracion_canciones_min = int(input('Duración en minutos: '))
-    else:
-        duracion_canciones_min = None
-    return duracion_canciones_min
-
-def comprobar_duracion_min(track, duracion_canciones_min): # si la duracion minima es None, no se comprueba
-    if duracion_canciones_min <= track['track']['duration_ms']/60000:
-        return True
-    return False
-
-def parametroDuracion():
-    quiereDuracion = str(input('Quieres que la playlist sea de una duración aproximada? (y/n): '))
-    if quiereDuracion == 'y':
-        duracion = int(input('Duración en minutos: '))
-    else:
-        duracion = None
-    return duracion
-
-def comprobar_duracion(playlist, duracion): # duracion es la duracion aproximada de la playlist, del metodo parametroDuracion
-    if duracion - 5 <= playlist['duration_ms']/60000 <= duracion + 5:
-        return True
-    return False
-
-def numero_canciones_min():
-    quiereNumeroCancionesMin = str(input('Quieres que la playlist tenga un número mínimo de canciones? (y/n): '))
-    if quiereNumeroCancionesMin == 'y':
-        numero_canciones_min = int(input('Número mínimo de canciones: '))
-    else:
-        numero_canciones_min = None
-    return numero_canciones_min
-
-def comprobar_numero_canciones_min(playlist, numero_canciones_min): # si el numero de canciones minimas es None, no se comprueba
-    if numero_canciones_min <= playlist['tracks']['total']:
-        return True
-    return False
-
-#endregion
+# crear playlist
 
 #region CREAR PLAYLIST
 
@@ -330,23 +231,20 @@ def extraerCanciones(playlist): #devuelve en una lista los ids de las canciones 
         trackList.append(item['track']['id'])
     return trackList
 
-def añadirCanciones(listaTracks, nuevaPlaylistID, sp): #añade a una playlist una lista de canciones devuelve la id de esa playlist
+def añadirCanciones(listaTracks, nuevaPlaylistID, sp): #añade a una playlist una lista de canciones
     sp.playlist_add_items(nuevaPlaylistID, listaTracks)
-    return nuevaPlaylistID
+    print('Canciones añadidas a la playlist, ve a disfrutar de tu nueva música!')
 
-def cumpleParametros(song, dicParameters, sp):
-    if check_artist(item, dicParameters['artists']) == False:
+def cumpleParametros(song, dicParameters, sp): # song es el id de la canción
+    if check_artist(song, dicParameters['artists'], sp) == False:
         return False
-    if check_album(item, dicParameters['albums']) == False:
+    if check_album(song, dicParameters['albums'], sp) == False:
         return False
-    if check_genre(item, dicParameters['genres'], sp) == False:
+    if check_year(song, dicParameters['years'][0], dicParameters['years'][1], sp) == False:
         return False
-    if check_year(item, dicParameters['years'][0], dicParameters['years'][1]) == False:
+    if check_popularity(song, dicParameters['popularity'], sp) == False:
         return False
-    if check_popularity(item, dicParameters['popularity']) == False:
-        return False
-
-    
+    return True
 
 def createPlaylist(dicParameters, sp, playlistOriginal):
     playlist_name, playlist_public, playlist_description = universalParameters()
@@ -356,6 +254,11 @@ def createPlaylist(dicParameters, sp, playlistOriginal):
         cumpleParams = cumpleParametros(song, dicParameters, sp)
         if cumpleParams:
             new_tracklist.append(song)
+    añadirCanciones(new_tracklist, new_playlist['id'], sp)
+    if dicParameters['cover'] is not None and check_url_cover(dicParameters['cover']):
+        sp.playlist_upload_cover_image(new_playlist['id'], dicParameters['cover'])
+    new_url = new_playlist['external_urls']['spotify'] # devuelve la url de la playlist creada
+    print(f'La playlist {playlist_name} ha sido creada con éxito. Puedes acceder a ella en {new_url}')
 
 
 
