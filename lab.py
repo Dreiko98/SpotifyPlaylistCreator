@@ -15,30 +15,11 @@ username = 'germanmallo44'
 print(f'bienvenido a playlist creator, {username}')
 
 # recibir playlist original
-url_playlist = 'https://open.spotify.com/playlist/2T4BuGz7Sd6IwDOMxcQjic?si=c85e0012f8d74ec4'
+url_playlist = 'https://open.spotify.com/playlist/5c9qABUJMl3pBHLOcRIMNl?si=576b9d69cb4948c3&pt=da8ab0f164b969945ddc270a68c41fa1'
 id_playlist = get_id_playlist(url_playlist)
 playlistOriginal = sp.playlist_tracks(id_playlist)
 playlist_info = sp.playlist(id_playlist)
 print(f'La playlist original es: {playlist_info["name"]}')
 
 listaCanciones = extraerCanciones(playlistOriginal)
-
-song1 = listaCanciones[3]
-print(f'\nsong1: {song1}\n')
-song_info = sp.track(song1).keys()
-print(f'song_info: {song_info} \n')
-songAlbum = sp.track(song1)['album']
-print(f'type(songAlbum){type(songAlbum)}\n') #lista
-
-for artist in songAlbum:
-    print(artist['name'])
-    print(artist['id'])
-
-"""for song in listaCanciones:
-    nameSong = sp.track(song)['name']
-    #obtener artista de la cancion teniendo la id de la cancion
-    artist = sp.track(song).keys()
-    print(nameSong)
-    for artist in artist:
-        artist = artist['name']
-    print(artist)"""
+print(len(listaCanciones))
