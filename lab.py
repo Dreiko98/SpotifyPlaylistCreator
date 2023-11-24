@@ -1,25 +1,27 @@
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-from playlistCreatorMetods import *
+from spotipy.oauth2 import SpotifyClientCredentials
 
-# Coloca aquí tus credenciales
-client_id = 'cc2ece12ff0840e68932c542a3870c46'
-client_secret = '85fe48dc89d2469aa8a39ca57838e7e6'
-redirect_uri = 'http://localhost:8888/callback'
+# Configura las credenciales de la API de Spotify
+client_credentials_manager = SpotifyClientCredentials(client_id='tu_client_id', client_secret='tu_client_secret')
+sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
-# Configuración de autenticación de usuario
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope='playlist-modify-private'))
+# ID de la playlist que deseas extraer
+playlist_id = 'tu_playlist_id'
 
-# Nombre de usuario de Spotify
-username = 'germanmallo44'
-print(f'bienvenido a playlist creator, {username}')
+# Número máximo de elementos por página (máximo 100 según la API de Spotify)
+items_per_page = 100
 
-# recibir playlist original
-url_playlist = 'https://open.spotify.com/playlist/5c9qABUJMl3pBHLOcRIMNl?si=576b9d69cb4948c3&pt=da8ab0f164b969945ddc270a68c41fa1'
-id_playlist = get_id_playlist(url_playlist)
-playlistOriginal = sp.playlist_tracks(id_playlist)
-playlist_info = sp.playlist(id_playlist)
-print(f'La playlist original es: {playlist_info["name"]}')
+# Realiza la primera solicitud para obtener la primera página de elementos
+results = sp.playlist_tracks(playlist_id, limit=items_per_page) # objeto tipo dict
 
-listaCanciones = extraerCanciones(playlistOriginal)
-print(len(listaCanciones))
+# Procesa los elementos de la primera página
+for item in results['items']:
+    # Realiza la operación que necesites con cada elemento
+    print(item['track']['name'])
+
+# Verifica si hay más páginas y realiza solicitudes adicionales si es necesario
+while results['next']: # Mientras haya páginas adicionales
+    results = sp.next(results) # Solicitud para obtener la página siguiente
+    for item in results['items']:
+        # Realiza la operación que necesites con cada elemento de las páginas adicionales
+        print(item['track']['name'])

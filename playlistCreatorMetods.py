@@ -1,3 +1,7 @@
+#buscador de artista por nombre
+#buscador de album por nombre
+#que salgan solo los albumes de los artistas que has seleccionado
+
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import requests
@@ -37,12 +41,18 @@ def get_id_album(url_album):
 
 #region ARTISTA
 
-def artistListMaker(playlist): #crea una lista con todos los artistas de la playlist
+def artistListMaker(playlist, sp): #crea una lista con todos los artistas de la playlist
     artistsList = []
     for item in playlist['items']: # iteramos sobre cada canción de la playlist
         for artist in item['track']['artists']:# iteramos sobre cada artista de la canción
             if artist['id'] not in artistsList:
-                artistsList.append(artist['id']) 
+                artistsList.append(artist['id'])
+    while playlist['next']: # mientras haya páginas adicionales
+        playlist = sp.next(playlist) # solicitud para obtener la página siguiente
+        for item in playlist['items']: # iteramos sobre cada canción de la playlist
+            for artist in item['track']['artists']:# iteramos sobre cada artista de la canción
+                if artist['id'] not in artistsList:
+                    artistsList.append(artist['id'])
     return artistsList
 
 def printArtists(artistsList, sp): #imprimimos todos los artistas de la playlist con el formato: 1) nombre artista
@@ -53,7 +63,7 @@ def printArtists(artistsList, sp): #imprimimos todos los artistas de la playlist
         cont += 1
 
 def artistParameter(playlistOriginal, playlist_info, sp): #devuelve una lista con los artistas elegidos por el usuario
-    artistsList = artistListMaker(playlistOriginal)
+    artistsList = artistListMaker(playlistOriginal, sp)
     wantsArtist = str(input('¿Quieres que la playlist sea de un artista en concreto? (y/n): '))  
     if wantsArtist.lower() == 'y':
         print(f'Estos son los artistas de la playlist {playlist_info["name"]}:')
@@ -88,11 +98,16 @@ def check_artist(song, chosenArtists, sp): # comprueba si almenos algún artista
 
 #region ALBUM
 
-def albumListMaker(playlist): #crea una lista con todos los albumes de la playlist
+def albumListMaker(playlist, sp): #crea una lista con todos los albumes de la playlist
     albumList = []
     for item in playlist['items']:
         if item['track']['album']['id'] not in albumList and item['track']['album']['album_type'] == 'album': #si el album está en la lista y no es un single
             albumList.append(item['track']['album']['id']) #añadimos el album a la lista
+    while playlist['next']: # mientras haya páginas adicionales
+        playlist = sp.next(playlist) # solicitud para obtener la página siguiente
+        for item in playlist['items']:
+            if item['track']['album']['id'] not in albumList and item['track']['album']['album_type'] == 'album':
+                albumList.append(item['track']['album']['id'])
     return albumList
 
 def printAlbums(albumList, sp): # imprime todos los albumes de la playlist con el formato: 1) nombre album
@@ -103,7 +118,7 @@ def printAlbums(albumList, sp): # imprime todos los albumes de la playlist con e
         cont += 1
 
 def albumParameter(playlistOriginal, playlist_info, sp):
-    albumList = albumListMaker(playlistOriginal)
+    albumList = albumListMaker(playlistOriginal, sp)
     wantsAlbum = str(input('¿Quieres que la playlist sea de un álbum en concreto? (y/n): '))
     if wantsAlbum.lower() == 'y':
         print(f'Estos son los álbumes de la playlist {playlist_info["name"]}:')
@@ -225,15 +240,27 @@ def check_url_cover(cover):
 
 #region CREAR PLAYLIST
 
-def extraerCanciones(playlist): #devuelve en una lista los ids de las canciones de una playlist que recibe como parámetro
+def extraerCanciones(playlist, sp): #devuelve en una lista los ids de las canciones de una playlist que recibe como parámetro
     trackList = []
     for item in playlist['items']:
         trackList.append(item['track']['id'])
+    while playlist['next']:
+        playlist = sp.next(playlist)
+        for item in playlist['items']:
+            trackList.append(item['track']['id'])
     return trackList
 
 def añadirCanciones(listaTracks, nuevaPlaylistID, sp): #añade a una playlist una lista de canciones
-    sp.playlist_add_items(nuevaPlaylistID, listaTracks)
+    sp.playlist_add_items(nuevaPlaylistID, listaTracks) 
     print('Canciones añadidas a la playlist, ve a disfrutar de tu nueva música!')
+
+"""# Verifica si hay más páginas y realiza solicitudes adicionales si es necesario
+while results['next']: # Mientras haya páginas adicionales
+    results = sp.next(results) # Solicitud para obtener la página siguiente
+    for item in results['items']:
+        # Realiza la operación que necesites con cada elemento de las páginas adicionales
+        print(item['track']['name'])"""
+
 
 def cumpleParametros(song, dicParameters, sp): # song es el id de la canción
     if check_artist(song, dicParameters['artists'], sp) == False:
@@ -250,7 +277,7 @@ def createPlaylist(dicParameters, sp, playlistOriginal):
     playlist_name, playlist_public, playlist_description = universalParameters()
     new_playlist = sp.user_playlist_create(user=sp.me()['id'], name=playlist_name, public = playlist_public, description=playlist_description)
     new_tracklist = []
-    for song in extraerCanciones(playlistOriginal): #por cada id de cancion
+    for song in extraerCanciones(playlistOriginal, sp): #por cada id de cancion
         cumpleParams = cumpleParametros(song, dicParameters, sp)
         if cumpleParams:
             new_tracklist.append(song)

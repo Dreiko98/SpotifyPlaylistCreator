@@ -15,9 +15,9 @@ username = 'germanmallo44'
 print(f'bienvenido a playlist creator, {username}')
 
 # recibir playlist original
-url_playlist = 'https://open.spotify.com/playlist/5c9qABUJMl3pBHLOcRIMNl?si=f4b86d8fc84548ee&pt=a2320e5e85e855d02bf9d4b7be73b801'
+url_playlist = 'https://open.spotify.com/playlist/5c9qABUJMl3pBHLOcRIMNl?si=512e0f69692e424e&pt=02a976b8676155952486b94488d8d6c5'
 id_playlist = get_id_playlist(url_playlist)
-playlistOriginal = sp.playlist_tracks(id_playlist)
+playlistOriginal = sp.playlist_tracks(id_playlist, limit = 100) # playlist por paginas de 100 canciones
 playlist_info = sp.playlist(id_playlist)
 print(f'La playlist original es: {playlist_info["name"]}')
 
