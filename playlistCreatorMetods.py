@@ -6,6 +6,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import requests
 import re
+from difflib import get_close_matches
 
 #region OBTENER IDs
 
@@ -39,21 +40,29 @@ def get_id_album(url_album):
 
 # parametros de las canciones
 
+def buscador_nombres(nombre_a_buscar, lista_nombres, n = 5, umbral = 0.7):
+    nombres_busqueda = get_close_matches(nombre_a_buscar, lista_nombres, n, umbral)
+    for nombre in nombres_busqueda:
+        if nombre == nombre_a_buscar:
+            return nombre
+    return nombres_busqueda if nombres_busqueda else None
+
 #region ARTISTA
 
-def artistListMaker(playlist, sp): #crea una lista con todos los artistas de la playlist
-    artistsList = []
+def artistDicMaker(playlist, sp): #diccionario {nombreArtista:id}
+    artistDic = {}
     for item in playlist['items']: # iteramos sobre cada canción de la playlist
         for artist in item['track']['artists']:# iteramos sobre cada artista de la canción
-            if artist['id'] not in artistsList:
-                artistsList.append(artist['id'])
+            if artist['id'] not in artistDic.values():
+                artistDic[artist['name']] = artist['id']
     while playlist['next']: # mientras haya páginas adicionales
         playlist = sp.next(playlist) # solicitud para obtener la página siguiente
         for item in playlist['items']: # iteramos sobre cada canción de la playlist
             for artist in item['track']['artists']:# iteramos sobre cada artista de la canción
-                if artist['id'] not in artistsList:
-                    artistsList.append(artist['id'])
-    return artistsList
+                if artist['id'] not in artistDic.values():
+                    artistDic[artist['name']] = artist['id']
+    return artistDic
+
 
 def printArtists(artistsList, sp): #imprimimos todos los artistas de la playlist con el formato: 1) nombre artista
     cont = 1
@@ -62,28 +71,80 @@ def printArtists(artistsList, sp): #imprimimos todos los artistas de la playlist
         print(f'{cont}) {info_artista["name"]}')
         cont += 1
 
+'''
 def artistParameter(playlistOriginal, playlist_info, sp): #devuelve una lista con los artistas elegidos por el usuario
     artistsList = artistListMaker(playlistOriginal, sp)
     wantsArtist = str(input('¿Quieres que la playlist sea de un artista en concreto? (y/n): '))  
     if wantsArtist.lower() == 'y':
-        print(f'Estos son los artistas de la playlist {playlist_info["name"]}:')
-        printArtists(artistsList, sp)
-        chosenArtistsNum = str(input('Escribe los números de los artistas que quieres en tu playlist separados por comas: '))
-        if chosenArtistsNum: # si la cadena no está vacía
-            chosenArtistsNumList = chosenArtistsNum.split(',') # separamos los números de los artistas
+        nombres_a_buscar = str(input('Escribe los nombres de los artistas que quieres en tu playlist separados por comas: '))
+        if nombres_a_buscar: # si la cadena no está vacía
+            # chooseArtists()
+            chosenArtistsNameList = nombres_a_buscar.split(',') # separamos los números de los artistas
             chosenArtists = [] # lista de artistas elegidos (la que se returneará)
-            for num in chosenArtistsNumList: # iteramos sobre cada número del artista
-                num = int(num.strip())  # Convertir a entero y eliminar espacios en blanco
-                if 1 <= num <= len(artistsList): # comprueba si el numero que le has metido está dentro del rango de artistas
-                    chosenArtists.append(artistsList[num - 1])
+            for name in chosenArtistsNameList: # iteramos sobre cada número del artista
+                name = int(name.strip())  # Convertir a entero y eliminar espacios en blanco
+                if 1 <= name <= len(artistsList): # comprueba si el numero que le has metido está dentro del rango de artistas
+                    chosenArtists.append(artistsList[name - 1])
                 else:
-                    print(f'Error: La posición {num} está fuera de rango. Ignorando esta posición.')
+                    print(f'Error: La posición {name} está fuera de rango. Ignorando esta posición.')
         else:
             print('Error: No se proporcionaron números de artistas. La lista de artistas será nula.')
             chosenArtists = None
     else:
         chosenArtists = None
     return chosenArtists #lista con los ids de los artistas seleccionados
+'''
+'''
+def chooseArtists(nombres_a_buscar, artistsList): #devuelve chosenArtists, una lista
+    lista_nombres_a_buscar = nombres_a_buscar.split(',') #nombres de los artistas a buscar
+    chosenArtists = [] #lista de artistas elegidos
+    for i, nombre_a_buscar in enumerate(lista_nombres_a_buscar): #por cada artista a buscar
+        artists_aprox = buscador_nombres(nombre_a_buscar, artistsList) #resultados de la busqueda
+        if artists_aprox is not None:
+            print("Artistas encontrados:")
+            for i in range(len(artists_aprox)):
+                print(f"{i+1}) {artists_aprox[i]}")
+            print("¿Cual es el artista que buscas?")
+            num_artista = int(input())
+            chosenArtists.append(artistsList[num_artista-1])
+'''
+def chooseArtists(artistsList, sp): # artistsList es una lista con los ids de los artistas de la playlist
+    nombre_a_buscar = str(input("Introduce el nombre del artista:"))
+    artists_prox = buscador_nombres(nombre_a_buscar, artistsList) # si no lo encuentra, devuelve None, si lo encuentra, devuelve una lista con los nombres
+    chosenArtists = []
+    if type(artists_prox) == list:
+        printArtists(artists_prox, sp)
+        chosenArtistNum = int(input("Introduce el número del artista que buscas:"))
+        chosenArtistName = artists_prox[chosenArtistNum-1] # nombre del artista que ha elegido
+    elif type(artists_prox) == str:
+        chosen
+
+
+'''
+            chosenArtistsNameList = nombres_a_buscar.split(',') # separamos los números de los artistas
+            chosenArtists = [] # lista de artistas elegidos (la que se returneará)
+            for name in chosenArtistsNameList: # iteramos sobre cada número del artista
+                name = int(name.strip())  # Convertir a entero y eliminar espacios en blanco
+                if 1 <= name <= len(artistsList): # comprueba si el numero que le has metido está dentro del rango de artistas
+                    chosenArtists.append(artistsList[name - 1])
+                else:
+                    print(f'Error: La posición {name} está fuera de rango. Ignorando esta posición.')
+        else:
+            print('Error: No se proporcionaron números de artistas. La lista de artistas será nula.')
+            chosenArtists = None
+    else:
+        chosenArtists = None
+    return chosenArtists #lista con los ids de los artistas seleccionados
+'''
+
+
+
+def artistParameter(playlistOriginal, playlist_info, sp):
+    artistsList = artistListMaker(playlistOriginal, sp) # artistas de la playlist
+    wantsArtist = str(input('¿Quieres que la playlist sea de un artista en concreto? (y/n): '))  
+    if wantsArtist.lower() == 'y':
+        while True:
+
 
 def check_artist(song, chosenArtists, sp): # comprueba si almenos algún artista de la canción está en la lista de artistas elegidos
     if chosenArtists is not None:
