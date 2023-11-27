@@ -1,14 +1,38 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from playlistCreatorMetods import *
+import webbrowser
+
 
 # Coloca aquí tus credenciales
 client_id = 'cc2ece12ff0840e68932c542a3870c46'
 client_secret = '85fe48dc89d2469aa8a39ca57838e7e6'
 redirect_uri = 'http://localhost:8888/callback'
 
+# Permisos de la aplicación
+scope = 'playlist-modify-private playlist-modify-public'
+
 # Configuración de autenticación de usuario
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope='playlist-modify-private'))
+sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id,
+                                               client_secret=client_secret,
+                                               redirect_uri=redirect_uri,
+                                               scope=scope))
+
+# Obtén la URL de autorización
+auth_url = sp.auth_manager.get_authorize_url()
+
+# Abre la URL en el navegador
+webbrowser.open(auth_url)
+
+# Pide al usuario introducir el código de autorización
+code = input("Introduce el código de autorización de la URL de redirección: ")
+
+# Obtén el token de acceso
+token_info = sp.auth_manager.get_access_token(code)
+
+# Usa el token de acceso para realizar acciones en la cuenta del usuario
+sp = spotipy.Spotify(auth=token_info['access_token'])
+
 
 # Nombre de usuario de Spotify
 username = 'germanmallo44'
