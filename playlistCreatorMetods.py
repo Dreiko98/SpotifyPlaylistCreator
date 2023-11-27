@@ -146,7 +146,7 @@ def chooseAlbum(albumDic, sp):
         albums_prox_id = []
         for album in albums_prox:
             albums_prox_id.append(albumDic[album])
-        if type(albums_prox) == list:
+        if albums_prox:
             printAlbums(albums_prox_id, sp)
             chosenAlbumNum = int(input("Introduce el número del álbum que buscas:"))
             chosenAlbumName = albums_prox[chosenAlbumNum-1] # nombre del album que ha elegido
@@ -155,8 +155,6 @@ def chooseAlbum(albumDic, sp):
             if chosenAlbumID is None:
                 print(f"No se encontró {chosenAlbumName}, de tipo {type(chosenAlbumName)} en el diccionario.")
             chosenAlbums.append(chosenAlbumID)
-        elif type(albums_prox) == str:
-            chosenAlbums.append(albums_prox)
         else: print('Álbum no encontrado')
         buscarOtro = str(input("¿Quieres buscar otro álbum?(y,n): "))
         if buscarOtro.lower() == "n":

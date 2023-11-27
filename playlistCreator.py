@@ -15,13 +15,14 @@ username = 'germanmallo44'
 print(f'bienvenido a playlist creator, {username}')
 
 # recibir playlist original
-url_playlist = 'https://open.spotify.com/playlist/5c9qABUJMl3pBHLOcRIMNl?si=512e0f69692e424e&pt=02a976b8676155952486b94488d8d6c5'
+url_playlist = input('Ingresa la url de la playlist: ')
 id_playlist = get_id_playlist(url_playlist)
 playlistOriginal = sp.playlist_tracks(id_playlist, limit = 100) # playlist por paginas de 100 canciones
 playlist_info = sp.playlist(id_playlist)
 print(f'La playlist original es: {playlist_info["name"]}')
 
 # elegir parámetros para la playlist
+print('Cargando, no toques nada niño rata')
 print('Ingresa los parámetros para la playlist nueva')
 parameters = {}
 
