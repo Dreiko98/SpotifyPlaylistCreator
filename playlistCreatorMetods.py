@@ -1,4 +1,3 @@
-#buscador de artista por nombre
 #buscador de album por nombre
 #que salgan solo los albumes de los artistas que has seleccionado
 
@@ -7,6 +6,8 @@ from spotipy.oauth2 import SpotifyOAuth
 import requests
 import re
 from difflib import get_close_matches
+import sys
+import time
 
 #region OBTENER IDs
 
@@ -40,12 +41,10 @@ def get_id_album(url_album):
 
 # parametros de las canciones
 
-def buscador_nombres(nombre_a_buscar, lista_nombres, n = 5, umbral = 0.7):
+def buscador_nombres(nombre_a_buscar, lista_nombres, n = 5, umbral = 0.3):
     nombres_busqueda = get_close_matches(nombre_a_buscar, lista_nombres, n, umbral)
-    for nombre in nombres_busqueda:
-        if nombre == nombre_a_buscar:
-            return nombre
     return nombres_busqueda if nombres_busqueda else None
+
 
 #region ARTISTA
 
@@ -72,18 +71,22 @@ def printArtists(artistsList, sp): #imprimimos todos los artistas de la playlist
         cont += 1
 
 def chooseArtists(artistsDic, sp): # devuelve chosenArtists, una lista
-    nombre_a_buscar = str(input("Introduce el nombre del artista:"))
-    artists_prox = buscador_nombres(nombre_a_buscar, list(artistsDic.keys())) # si no lo encuentra, devuelve None, si lo encuentra, devuelve una lista con los nombres
     chosenArtists = []
     while True:
-        if type(artists_prox) == list:
-            printArtists(artists_prox, sp)
+        nombre_a_buscar = str(input("Introduce el nombre del artista:"))
+        artists_prox = buscador_nombres(nombre_a_buscar, list(artistsDic.keys())) # si no lo encuentra, devuelve None, si lo encuentra, devuelve una lista con los nombres   
+        atists_prox_id = []
+        for artist in artists_prox:
+            atists_prox_id.append(artistsDic[artist]) # lista de ids de los artistas que ha encontrado
+        if artists_prox:
+            printArtists(atists_prox_id, sp)
             chosenArtistNum = int(input("Introduce el número del artista que buscas:"))
             chosenArtistName = artists_prox[chosenArtistNum-1] # nombre del artista que ha elegido
-            chosenArtistID = artistsDic['chosenArtistName']
+            print(chosenArtistName)
+            chosenArtistID = artistsDic.get(chosenArtistName, None)
+            if chosenArtistID is None:
+                print(f"No se encontró {chosenArtistName}, de tipo {type(chosenArtistName)} en el diccionario.")
             chosenArtists.append(chosenArtistID)
-        elif type(artists_prox) == str:
-            chosenArtists.append(artistsDic['artists_prox'])
         else: print('Artista no encontrado')
         buscarOtro = str(input("¿Quieres buscar otro artista?(y,n): "))
         if buscarOtro.lower() == "n":
@@ -96,6 +99,7 @@ def artistParameter(playlistOriginal, playlist_info, sp):
     if wantsArtist.lower() == 'y':
         chosen_artists = chooseArtists(artistsDic, sp)
         return chosen_artists if chosen_artists else None
+    return None
 
 
 def check_artist(song, chosenArtists, sp): # comprueba si almenos algún artista de la canción está en la lista de artistas elegidos
@@ -111,17 +115,21 @@ def check_artist(song, chosenArtists, sp): # comprueba si almenos algún artista
 
 #region ALBUM
 
-def albumListMaker(playlist, sp): #crea una lista con todos los albumes de la playlist
-    albumList = []
+def albumDicMaker(playlist, sp):
+    albumDic = {}
     for item in playlist['items']:
-        if item['track']['album']['id'] not in albumList and item['track']['album']['album_type'] == 'album': #si el album está en la lista y no es un single
-            albumList.append(item['track']['album']['id']) #añadimos el album a la lista
-    while playlist['next']: # mientras haya páginas adicionales
-        playlist = sp.next(playlist) # solicitud para obtener la página siguiente
+        if item['track']['album']['id'] not in albumDic.values() and item['track']['album']['album_type'] == 'album':
+            album_name = item['track']['album']['name']
+            album_id = item['track']['album']['id']
+            albumDic[album_name] = album_id
+    while playlist['next']:
+        playlist = sp.next(playlist)
         for item in playlist['items']:
-            if item['track']['album']['id'] not in albumList and item['track']['album']['album_type'] == 'album':
-                albumList.append(item['track']['album']['id'])
-    return albumList
+            if item['track']['album']['id'] not in albumDic.values() and item['track']['album']['album_type'] == 'album':
+                album_name = item['track']['album']['name']
+                album_id = item['track']['album']['id']
+                albumDic[album_name] = album_id
+    return albumDic
 
 def printAlbums(albumList, sp): # imprime todos los albumes de la playlist con el formato: 1) nombre album
     cont = 1
@@ -130,28 +138,38 @@ def printAlbums(albumList, sp): # imprime todos los albumes de la playlist con e
         print(f'{cont}) {info_album["name"]}')
         cont += 1
 
+def chooseAlbum(albumDic, sp):
+    chosenAlbums = []
+    while True:
+        nombre_a_buscar = str(input("Introduce el nombre del álbum:"))
+        albums_prox = buscador_nombres(nombre_a_buscar, list(albumDic.keys())) # si no lo encuentra, devuelve None, si lo encuentra, devuelve una lista con los nombres   
+        albums_prox_id = []
+        for album in albums_prox:
+            albums_prox_id.append(albumDic[album])
+        if type(albums_prox) == list:
+            printAlbums(albums_prox_id, sp)
+            chosenAlbumNum = int(input("Introduce el número del álbum que buscas:"))
+            chosenAlbumName = albums_prox[chosenAlbumNum-1] # nombre del album que ha elegido
+            print(chosenAlbumName)
+            chosenAlbumID = albumDic.get(chosenAlbumName, None)
+            if chosenAlbumID is None:
+                print(f"No se encontró {chosenAlbumName}, de tipo {type(chosenAlbumName)} en el diccionario.")
+            chosenAlbums.append(chosenAlbumID)
+        elif type(albums_prox) == str:
+            chosenAlbums.append(albums_prox)
+        else: print('Álbum no encontrado')
+        buscarOtro = str(input("¿Quieres buscar otro álbum?(y,n): "))
+        if buscarOtro.lower() == "n":
+            break
+    return chosenAlbums
+
 def albumParameter(playlistOriginal, playlist_info, sp):
-    albumList = albumListMaker(playlistOriginal, sp)
+    albumDic = albumDicMaker(playlistOriginal, sp)
     wantsAlbum = str(input('¿Quieres que la playlist sea de un álbum en concreto? (y/n): '))
     if wantsAlbum.lower() == 'y':
-        print(f'Estos son los álbumes de la playlist {playlist_info["name"]}:')
-        printAlbums(albumList, sp) #imprime todos los albumes de la playlist con el formato: 1) nombre album
-        chosenAlbumsNum = str(input('Escribe los números de los álbumes que quieres en tu playlist separados por comas: '))
-        if chosenAlbumsNum:
-            chosenAlbumNumList = chosenAlbumsNum.split(',')
-            chosenAlbums = [] # lista de albumes elegidos (la que se returneará)
-            for num in chosenAlbumNumList:
-                num = int(num.strip())  # Convertir a entero y eliminar espacios en blanco
-                if 1 <= num <= len(albumList): # comprueba si el numero que le has metido está dentro del rango de albumes
-                    chosenAlbums.append(albumList[num - 1]) #añadimos el album a la lista que se returneará
-                else:
-                    print(f'Error: La posición {num} está fuera de rango. Ignorando esta posición.')
-        else:
-            print('Error: No se proporcionaron números de álbumes. La lista de álbumes será nula.')
-            chosenAlbums = None
-    else:
-        chosenAlbums = None
-    return chosenAlbums #lista con los ids de los albumes seleccionados
+        chosen_albums = chooseAlbum(albumDic, sp)
+        return chosen_albums if chosen_albums else None
+    return None
 
 def check_album(song, chosenAlbums, sp): # comprueba si el album de la canción está en la lista de albumes elegidos
     if chosenAlbums is not None:
@@ -160,7 +178,6 @@ def check_album(song, chosenAlbums, sp): # comprueba si el album de la canción 
             return True
         return False
     return True
-
 #endregion
 
 #region AÑO
@@ -290,6 +307,7 @@ def createPlaylist(dicParameters, sp, playlistOriginal):
     playlist_name, playlist_public, playlist_description = universalParameters()
     new_playlist = sp.user_playlist_create(user=sp.me()['id'], name=playlist_name, public = playlist_public, description=playlist_description)
     new_tracklist = []
+    print('Creando playlist...')
     for song in extraerCanciones(playlistOriginal, sp): #por cada id de cancion
         cumpleParams = cumpleParametros(song, dicParameters, sp)
         if cumpleParams:
