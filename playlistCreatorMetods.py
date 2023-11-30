@@ -8,6 +8,7 @@ import re
 from difflib import get_close_matches
 import sys
 import time
+from PIL import Image # esta librería te permite abrir una imagen desde una url 
 
 #region OBTENER IDs
 

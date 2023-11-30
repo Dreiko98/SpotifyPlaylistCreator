@@ -1,21 +1,44 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from playlistCreatorMetods import *
+import webbrowser
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Coloca aquí tus credenciales
 client_id = 'cc2ece12ff0840e68932c542a3870c46'
 client_secret = '85fe48dc89d2469aa8a39ca57838e7e6'
-redirect_uri = 'http://localhost:8888/callback'
+redirect_uri = 'http://127.0.0.1:8888/callback'
 
 # Configuración de autenticación de usuario
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope='playlist-modify-private'))
 
-# Nombre de usuario de Spotify
-username = 'germanmallo44'
-print(f'bienvenido a playlist creator, {username}')
+# Solicitar permisos de lectura y escritura
+
+# Clase para manejar la solicitud HTTP de redirección
+class CallbackHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Capturamos la URL de redirección
+        url = self.path
+        # Establecemos el token de acceso en el objeto sp
+        sp.auth_manager.get_access_token(url)
+        # Respondemos con un mensaje de éxito
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(b"<html><head><title>Authentication Complete</title></head><body><h1>Authentication Complete</h1><p>You can close this window now.</p></body></html>")
+
+# Configuramos el servidor HTTP para manejar la redirección
+server_address = ('', 8888)
+httpd = HTTPServer(server_address, CallbackHandler)
+
+# Abrimos automáticamente el navegador para la autenticación
+webbrowser.open(sp.auth_manager.get_authorize_url())
+
+# Manejamos las solicitudes hasta que el usuario cierre la ventana del navegador
+httpd.handle_request()
 
 # recibir playlist original
-url_playlist = 'https://open.spotify.com/playlist/6xTntSEzzkk1m5xu99qu5o?si=118c4332e812477d'
+url_playlist = input('Ingresa la URL de la playlist original: ')
 id_playlist = get_id_playlist(url_playlist)
 playlistOriginal = sp.playlist_tracks(id_playlist, limit = 100) # playlist por paginas de 100 canciones
 playlist_info = sp.playlist(id_playlist)
