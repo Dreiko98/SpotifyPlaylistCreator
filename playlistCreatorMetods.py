@@ -304,13 +304,20 @@ def cumpleParametros(song, dicParameters, sp): # song es el id de la canción
 def createPlaylist(dicParameters, sp, playlistOriginal):
     playlist_name, playlist_public, playlist_description = universalParameters()
     new_playlist = sp.user_playlist_create(user=sp.me()['id'], name=playlist_name, public = playlist_public, description=playlist_description)
+    original_tracklist = extraerCanciones(playlistOriginal, sp)
     new_tracklist = []
     print('Creando playlist...')
-    for song in extraerCanciones(playlistOriginal, sp): #por cada id de cancion
+    for song in original_tracklist: #por cada id de cancion
         cumpleParams = cumpleParametros(song, dicParameters, sp)
         if cumpleParams:
+            print(f'La canción {sp.track(song)["name"]} cumple los parámetros')
             new_tracklist.append(song)
-    añadirCanciones(new_tracklist, new_playlist['id'], sp)
+            print(f'La canción {sp.track(song)["name"]} ha sido añadida a la playlist')
+    while len(new_tracklist) > 100: # mientras grupos de 100 canciones por añadir
+        añadirCanciones(new_tracklist[:100], new_playlist['id'], sp) # añadimos las 100 primeras canciones
+        new_tracklist = new_tracklist[100:] # quitamos las 100 primeras canciones
+        time.sleep(2) # esperamos 2 segundos para no sobrecargar la API
+    añadirCanciones(new_tracklist, new_playlist['id'], sp) # añadimos las canciones restantes
     if dicParameters['cover'] is not None and check_url_cover(dicParameters['cover']):
         sp.playlist_upload_cover_image(new_playlist['id'], dicParameters['cover'])
     new_url = new_playlist['external_urls']['spotify'] # devuelve la url de la playlist creada
